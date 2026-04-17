@@ -80,6 +80,7 @@ Fire is allowed only when:
 - feature is enabled;
 - aircraft state is `ALIVE`;
 - controller is ready;
+- fire cooldown deadline has passed;
 - no implementation-specific safety gate blocks the command.
 
 ### Fire blocked
@@ -99,6 +100,7 @@ A `HIT` may be accepted when:
 - aircraft state is `ALIVE`;
 - the packet is structurally valid;
 - the payload carries a valid shooter identifier;
+- hit invulnerability window has expired;
 - implementation-level debounce or validation conditions pass.
 
 ### Ignore hit
@@ -107,6 +109,7 @@ A `HIT` should be ignored when:
 
 - aircraft state is `DESTROYED`;
 - the packet is invalid or corrupted;
+- the aircraft is still in hit invulnerability window;
 - the event fails debounce or duplicate suppression rules.
 
 ## Local counters
@@ -114,6 +117,8 @@ A `HIT` should be ignored when:
 ### Deaths
 
 - Increment `deaths` when an `ALIVE` aircraft transitions to `DESTROYED` due to an accepted hit.
+- Reset `deaths` on `ARM` event (`DISARMED -> ARMED` transition).
+- Do not reset `deaths` on `DISARM` so post-flight results remain visible after landing.
 
 ## Shooter identity in v0.1
 
@@ -135,6 +140,12 @@ The respawn model in v0.1 is deliberately simple:
 - respawn is timer-based only;
 - no location check is required;
 - no base return is required.
+
+## MVP tunable gameplay parameters
+
+- `respawn_timeout_s`
+- `fire_rate_rpm`
+- `hit_invulnerability_ms` (default 1000 ms)
 
 ## Player ID model
 

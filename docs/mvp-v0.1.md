@@ -16,7 +16,9 @@ The MVP is intentionally not a realism simulator. It is a playable vertical slic
 - one external UART controller implementation target;
 - one numeric `player_id`;
 - one fire action from pilot input;
+- configurable fire rate limit (`fire_rate_rpm`);
 - hit registration from the external controller;
+- configurable hit invulnerability window after accepted hit (`hit_invulnerability_ms`);
 - aircraft states:
   - `ALIVE`
   - `DESTROYED`
@@ -61,6 +63,13 @@ The MVP is intentionally not a realism simulator. It is a playable vertical slic
 - While `DESTROYED`, further fire commands are blocked.
 - When the timer expires, the aircraft returns to `ALIVE`.
 
+### Death counter reset rule
+
+- `deaths` is a per-flight-session counter in v0.1.
+- `deaths` must reset on `ARM` event (`DISARMED -> ARMED` transition).
+- `deaths` must not reset on `DISARM`, so the pilot can read the result after landing.
+- After FC reboot, `deaths` starts from `0` until next `ARM`.
+
 ## Minimal data model
 
 The MVP requires at least:
@@ -71,6 +80,10 @@ The MVP requires at least:
 - `respawn_timeout_ms`
 - `respawn_deadline_ms`
 - `deaths`
+- `fire_rate_rpm`
+- `fire_cooldown_deadline_ms`
+- `hit_invulnerability_ms`
+- `last_hit_accepted_ms`
 
 ## MVP UX requirements
 
@@ -86,10 +99,9 @@ The pilot must be able to tell, without ambiguity:
 
 ### Persistent elements
 
-- local `player_id`
-- state: `ALIVE` / `DESTROYED`
+- local player label (for example: `Player: 3`)
+- state only: `ALIVE` / `DESTROYED`
 - local `deaths` counter
-- respawn timer while destroyed
 
 ### Event messages
 
@@ -97,6 +109,18 @@ The pilot must be able to tell, without ambiguity:
 - `DESTROYED`
 - `RESPAWN IN X`
 - `RESPAWNED`
+
+Notes:
+
+- In v0.1, respawn countdown is shown through `LaserTag Message` (`RESPAWN IN X`) rather than a separate persistent timer element.
+- Avoid `PID` abbreviation in OSD labels to prevent confusion with flight-controller PID tuning.
+
+## Parameter constraints (v0.1)
+
+- `player_id`: `0..7`
+- `respawn_timeout_s`: `1..120`
+- `fire_rate_rpm`: `10..600`
+- `hit_invulnerability_ms`: `0..5000` (default `1000`)
 
 ## Hardware assumptions for MVP
 
